@@ -11,10 +11,15 @@
 
 
 start(_StartType, _StartArgs) ->
-    Dispatch = cowboy_router:compile([{'_', [{"/", hna_ws, []}]}]),
+    DispatchWs = cowboy_router:compile([{'_', [{"/", hna_ws, []}]}]),
     {ok, _} = cowboy:start_clear(hna_ws,
+                                 [{port, 8081}],
+                                 #{env => #{dispatch => DispatchWs}}),
+    DispatchHttp = cowboy_router:compile([{'_', [{"/page/:PageNum", hna_http, []},
+                                                 {"/story/:StoryId", hna_http, []}]}]),
+    {ok, _} = cowboy:start_clear(hna_http,
                                  [{port, 8080}],
-                                 #{env => #{dispatch => Dispatch}}),
+                                 #{env => #{dispatch => DispatchHttp}}),
     hna_sup:start_link().
 
 

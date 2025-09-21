@@ -28,4 +28,3 @@ websocket_info({new_stories, Stories}, State) ->
     {[{text, json:encode(Stories)}], State};
 websocket_info(_, State) ->
     {[], State}.
-

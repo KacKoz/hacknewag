@@ -49,11 +49,10 @@ handle_info(refresh_stories, _State) ->
     {ok, Stories} = hna_fetcher:get_stories(),
     % Send messages to connected ws clients
     lists:foreach(
-        fun(Pid) ->
-                Pid ! {new_stories, Stories}
-        end,
-        pg:get_members(ws_connections)
-     ),
+      fun(Pid) ->
+              Pid ! {new_stories, Stories}
+      end,
+      pg:get_members(ws_connections)),
     erlang:send_after(refresh_interval(), self(), refresh_stories),
     {noreply, Stories}.
 
@@ -61,6 +60,7 @@ handle_info(refresh_stories, _State) ->
 refresh_interval() ->
     {ok, Interval} = application:get_env(hacker_news_aggregator, refresh_interval),
     Interval.
+
 
 find_story(_Id, []) ->
     not_found;
