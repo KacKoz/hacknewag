@@ -34,9 +34,9 @@ init([]) ->
                  period => 1
                 },
     ChildSpecs = [
-     %  #{id => hna_fetcher,
-     % start => {hna_fetcher, start_link, []}
-     % }
+      #{id => hna_storage,
+     start => {hna_storage, start_link, []}
+     }
     ],
     {ok, {SupFlags, ChildSpecs}}.
 
