@@ -10,10 +10,12 @@
 -type story() :: #{binary() => binary() | integer()}.
 -type story_id() :: non_neg_integer().
 
+-export_type([story/0, story_id/0]).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
+-spec init(any()) -> {ok, any()}.
 
 init(_Args) ->
     erlang:send_after(refresh_interval(), self(), refresh_stories),
@@ -38,6 +40,11 @@ get_all_stories() ->
 get_story(Id) when is_integer(Id) ->
     gen_server:call(?MODULE, {get_story, Id}).
 
+-spec handle_call(Arg, From, Stories) -> Result when
+      Arg :: {get_page, non_neg_integer()} | {get_story, hna_storage:story_id()} | get_all_stories,
+      From :: {pid(), any()},
+      Stories :: [hna_storage:story()],
+      Result :: {reply, [hna_storage:story()] | {ok, hna_storage:story()} | {error, not_found}, [hna_storage:story()]}.
 
 handle_call({get_page, N}, _From, Stories) ->
     PageSize = application:get_env(hacker_news_aggregator, page_size, 10),
@@ -48,11 +55,14 @@ handle_call({get_story, Id}, _From, Stories) ->
 handle_call(get_all_stories, _From, Stories) ->
     {reply, Stories, Stories}.
 
-
 handle_cast(Request, State) ->
     logger:warning("Unexpected cast to ~p: ~p~n", [?MODULE, Request]),
     {noreply, State}.
 
+-spec handle_info(Arg, Stories) -> Result when
+      Arg :: refresh_stories | {fetched_stories, [hna_storage:story()]} | {'DOWN', any(), process, any(), any()},
+      Stories :: [hna_storage:story()],
+      Result :: {noreply, [hna_storage:story()]}.
 
 handle_info(refresh_stories, State) ->
     Self = self(),
@@ -63,15 +73,17 @@ handle_info(refresh_stories, State) ->
       end),
     {noreply, State};
 handle_info({fetched_stories, Stories}, _State) ->
-    % Send messages to connected ws clients
     erlang:send_after(refresh_interval(), self(), refresh_stories),
+    % Send messages to connected ws clients
     lists:foreach(
       fun(Pid) ->
               Pid ! {new_stories, Stories}
       end,
-      pg:get_members(ws_connections)),
+      pg:get_members(ws_connections)
+    ),
     {noreply, Stories};
-handle_info(_, State) ->
+handle_info({'DOWN', _Ref, process, _Pid2, Reason}, State) ->
+    logger:warning("Stories fetching process failed with reason: ~p~n", [Reason]),
     {noreply, State}.
 
 

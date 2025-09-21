@@ -36,7 +36,13 @@ init([]) ->
     ChildSpecs = [#{
                     id => hna_storage,
                     start => {hna_storage, start_link, []}
-                   }],
+                   },
+                  % I start it here so it works in rebar3 shell
+                    #{
+                        id => my_pg,
+                        start => {pg, start_link, []}
+                    }
+                 ],
     {ok, {SupFlags, ChildSpecs}}.
 
 %% internal functions
