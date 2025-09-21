@@ -33,11 +33,10 @@ init([]) ->
                  intensity => 0,
                  period => 1
                 },
-    ChildSpecs = [
-      #{id => hna_storage,
-     start => {hna_storage, start_link, []}
-     }
-    ],
+    ChildSpecs = [#{
+                    id => hna_storage,
+                    start => {hna_storage, start_link, []}
+                   }],
     {ok, {SupFlags, ChildSpecs}}.
 
 %% internal functions

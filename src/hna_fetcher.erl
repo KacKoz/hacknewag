@@ -3,7 +3,7 @@
 -export([get_stories/0]).
 
 
--spec get_stories() -> [{non_neg_integer(), binary()}].
+-spec get_stories() -> {ok, [{non_neg_integer(), binary()}]}.
 
 get_stories() ->
     {ok, TopIds} = fetch_stories_ids(),
@@ -15,7 +15,7 @@ fetch_stories_ids() ->
     TopStoriesUrl = "https://hacker-news.firebaseio.com/v0/topstories.json",
     StoriesCount = application:get_env(hacker_news_aggregator, top_stories_count, 50),
     case httpc:request(get, {TopStoriesUrl, []}, [], [{body_format, binary}]) of
-        {ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} ->
+        {ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} when is_binary(Body) ->
             AllIds = json:decode(Body),
             {ok, lists:sublist(AllIds, StoriesCount)};
         {error, _Error} ->
@@ -33,7 +33,7 @@ fetch_whole_stories(Ids) ->
                     {ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} = _Res ->
                         StoryMap = json:decode(Body),
                         StoryMapClean = lists:foldl(fun maps:remove/2, StoryMap, [<<"descendants">>, <<"kids">>, <<"type">>]),
-                        [{Id, iolist_to_binary(json:encode(StoryMapClean))} | Stories];
+                        [StoryMapClean | Stories];
                     _ ->
                         Stories
                 end
