@@ -2,7 +2,6 @@
 
 -export([get_stories/0]).
 
-
 -spec get_stories() -> {ok, [hna_storage:story()]}.
 
 get_stories() ->
@@ -28,19 +27,21 @@ fetch_stories_ids() ->
 fetch_whole_stories(Ids) ->
     ItemUrl = "https://hacker-news.firebaseio.com/v0/item/",
     lists:reverse(
-      lists:foldl(
-        fun(Id, Stories) ->
+        lists:foldl(
+            fun(Id, Stories) ->
                 Url = ItemUrl ++ integer_to_list(Id) ++ ".json",
                 case httpc:request(get, {Url, []}, [], [{body_format, binary}]) of
                     {ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} ->
                         StoryMap = json:decode(Body),
-                        StoryMapClean = lists:foldl(fun maps:remove/2, StoryMap, [<<"descendants">>, <<"kids">>, <<"type">>]),
+                        StoryMapClean = lists:foldl(fun maps:remove/2, StoryMap, [
+                            <<"descendants">>, <<"kids">>, <<"type">>
+                        ]),
                         [StoryMapClean | Stories];
                     _ ->
                         Stories
                 end
-        end,
-        [],
-        Ids
-       )
-     ).
+            end,
+            [],
+            Ids
+        )
+    ).

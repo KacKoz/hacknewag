@@ -1,19 +1,24 @@
-{application, hacker_news_aggregator,
- [{description, "Hacker News Aggregator"},
-  {vsn, "0.1.0"},
-  {registered, []},
-  {mod, {hna_app, []}},
-  {applications, [kernel,
-                  stdlib,
-                  cowboy,
-                  inets,
-                  recon]},
-  {env, [{top_stories_count, 50},
-         {page_size, 10},
-         % 5 minutes
-         {refresh_interval, 300000},
-         % 12 minutes
-         {idle_timeout, 720000}]},
-  {modules, []},
-  {licenses, ["Apache-2.0"]},
-  {links, []}]}.
+{application, hacker_news_aggregator, [
+    {description, "Hacker News Aggregator"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {mod, {hna_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        cowboy,
+        inets,
+        recon
+    ]},
+    {env, [
+        {top_stories_count, 50},
+        {page_size, 10},
+        % 5 minutes
+        {refresh_interval, 300_000},
+        % 12 minutes
+        {idle_timeout, 720_000}
+    ]},
+    {modules, []},
+    {licenses, ["Apache-2.0"]},
+    {links, []}
+]}.

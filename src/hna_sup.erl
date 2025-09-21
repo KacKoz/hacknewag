@@ -13,10 +13,8 @@
 
 -define(SERVER, ?MODULE).
 
-
 start_link() ->
     supervisor:start_link({local, ?SERVER}, ?MODULE, []).
-
 
 %% sup_flags() = #{strategy => strategy(),         % optional
 %%                 intensity => non_neg_integer(), % optional
@@ -29,20 +27,18 @@ start_link() ->
 %%                  modules => modules()}   % optional
 init([]) ->
     SupFlags = #{
-                 strategy => one_for_one,
-                 intensity => 1,
-                 period => 5
-                },
-    ChildSpecs = [#{
-                    id => hna_storage,
-                    start => {hna_storage, start_link, []}
-                   },
-                  % I start it here so it works in rebar3 shell
-                    #{
-                        id => my_pg,
-                        start => {pg, start_link, []}
-                    }
-                 ],
+        strategy => one_for_one,
+        intensity => 1,
+        period => 5
+    },
+    ChildSpecs = [
+        #{
+            id => hna_storage,
+            start => {hna_storage, start_link, []}
+        },
+        #{
+            id => my_pg,
+            start => {pg, start_link, []}
+        }
+    ],
     {ok, {SupFlags, ChildSpecs}}.
-
-%% internal functions
