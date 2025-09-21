@@ -10,6 +10,8 @@ get_stories() ->
             Stories = fetch_whole_stories(TopIds),
             {ok, Stories};
         {error, could_not_fetch} ->
+            % In case of error return empty list. I decided to prioritize 
+            % consistency over availability of data.
             {ok, []}
     end.
 
@@ -31,6 +33,7 @@ fetch_stories_ids() ->
 
 fetch_whole_stories(Ids) ->
     ItemUrl = "https://hacker-news.firebaseio.com/v0/item/",
+    % Here we could split stories fetching into multiple processes to make it faster.
     lists:reverse(
         lists:foldl(
             fun(Id, Stories) ->
@@ -38,12 +41,18 @@ fetch_whole_stories(Ids) ->
                 case httpc:request(get, {Url, []}, [], [{body_format, binary}]) of
                     {ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} when is_binary(Body) ->
                         StoryMap = json:decode(Body),
+                        % Here I decided to remove those fields, since from the perspective
+                        % of our app they are not relevant.
                         StoryMapClean = lists:foldl(fun maps:remove/2, StoryMap, [
                             <<"descendants">>, <<"kids">>, <<"type">>
                         ]),
                         [StoryMapClean | Stories];
                     {error, Error} ->
                         logger:error("Could not fetch story with id: ~p. Reason: ~p~n", [Id, Error]),
+                        % If only some stories couldn't be fetched, we will return the ones that could be.
+                        % Thanks to that we retain consistency with HN without keeping old data or
+                        % throwing error all the way. Pagination is also implemented in a way that handles
+                        % such cases correctly.
                         Stories
                 end
             end,

@@ -16,7 +16,6 @@ init(Req, State) ->
 
 page_handler(Req0, State) ->
     PageNum = cowboy_req:binding('PageNum', Req0),
-    logger:error("Page: ~p~n", [PageNum]),
     Page = hna_storage:get_page(PageNum),
     Req = cowboy_req:reply(
         200,

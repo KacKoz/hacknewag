@@ -68,15 +68,26 @@ handle_cast(Request, State) ->
     Result :: {noreply, [hna_storage:story()]}.
 
 handle_info(refresh_stories, State) ->
+    % The fetching happens in separate process so we don't block this gen_server.
     Self = self(),
     spawn_monitor(
         fun() ->
+            % I was thinking about passing current stories here as an argument, so the
+            % fetcher doesn'g have to pull whole story info for the stories we already have.
+            % The problem with this is that we wouldn't get updates on number of upvotes for example.
+            % It would depend on the buissness requirements for the endpoints.
             {ok, Stories} = hna_fetcher:get_stories(),
             Self ! {fetched_stories, Stories}
         end
     ),
     {noreply, State};
 handle_info({fetched_stories, Stories}, _State) ->
+    % I was considering in which format to store the stories. I left it as a list
+    % because we need to retain the order of the elements for pagination and ws connections.
+    % The only drawback of this is that calling /story/id endpoint forces us to search for
+    % the story in linear time. For such a small list I think it isn't a problem, however
+    % for larger lists and/or very frequent single story calls we could use an redundant
+    % associative data structure for faster lookup but the memory usage would be higher.
     erlang:send_after(refresh_interval(), self(), refresh_stories),
     % Send messages to connected ws clients
     lists:foreach(
@@ -86,9 +97,18 @@ handle_info({fetched_stories, Stories}, _State) ->
         pg:get_members(ws_connections)
     ),
     {noreply, Stories};
-handle_info({'DOWN', _Ref, process, _Pid2, Reason}, State) ->
+handle_info({'DOWN', _Ref, process, _Pid2, normal}, State) ->
+    % Process finished succesfully
+    {noreply, State};
+handle_info({'DOWN', _Ref, process, _Pid2, Reason}, _State) ->
+    % Here we could potentially start the fetching process again. I decided to let it begin after
+    % the interval passes again.
     logger:warning("Stories fetching process failed with reason: ~p~n", [Reason]),
-    {noreply, State}.
+    % I change the state to an empty list, because we couldn't get the newest stories from HN.
+    % I'm choosing being up to date before being accessible here. It is also consistent with the fact that
+    % if the HN api is down we will also set the state to an empty list.
+    % This of course could be changed to meet the buisness needs.
+    {noreply, []}.
 
 -spec refresh_interval() -> non_neg_integer().
 
