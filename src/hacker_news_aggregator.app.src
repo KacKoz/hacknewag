@@ -1,14 +1,13 @@
-{application, hacker_news_aggregator, [
-    {description, "Hacker News Aggregator"},
-    {vsn, "0.1.0"},
-    {registered, []},
-    {mod, {hna_app, []}},
-    {applications, [
-        kernel,
-        stdlib
-    ]},
-    {env, []},
-    {modules, []},
-    {licenses, ["Apache-2.0"]},
-    {links, []}
- ]}.
+{application, hacker_news_aggregator,
+ [{description, "Hacker News Aggregator"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {mod, {hna_app, []}},
+  {applications, [kernel,
+                  stdlib]},
+  {env, [{top_stories_count, 50},
+         {page_size, 10},
+         {refresh_interval, 10000}]},
+  {modules, []},
+  {licenses, ["Apache-2.0"]},
+  {links, []}]}.
