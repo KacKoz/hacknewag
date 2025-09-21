@@ -10,7 +10,11 @@
 
 
 init(Req, State) ->
-    {cowboy_websocket, Req, State}.
+    {ok, IdleTimeout} = application:get_env(hacker_news_aggregator, idle_timeout),
+    Opts = #{
+             idle_timeout => IdleTimeout
+            },
+    {cowboy_websocket, Req, State, Opts}.
 
 
 websocket_init(State) ->

@@ -10,7 +10,10 @@
                   recon]},
   {env, [{top_stories_count, 50},
          {page_size, 10},
-         {refresh_interval, 10000}]},
+         % 5 minutes
+         {refresh_interval, 300000},
+         % 12 minutes
+         {idle_timeout, 720000}]},
   {modules, []},
   {licenses, ["Apache-2.0"]},
   {links, []}]}.
