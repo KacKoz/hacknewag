@@ -21,7 +21,8 @@ init(Req, State) ->
 websocket_init(State) ->
     % I decided to use process group to keep track of websocket connections.
     % Each ws connection is a separate process, so we keep their pids in the group
-    % and we are able to send them the new data after update.
+    % and we are able to send them the new data after update without having to implement
+    % any custom subscription mechanisms.
     pg:join(ws_connections, self()),
     Stories = hna_storage:get_all_stories(),
     {[{text, json:encode(Stories)}], State}.
