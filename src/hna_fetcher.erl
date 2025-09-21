@@ -5,9 +5,13 @@
 -spec get_stories() -> {ok, [hna_storage:story()]}.
 
 get_stories() ->
-    {ok, TopIds} = fetch_stories_ids(),
-    Stories = fetch_whole_stories(TopIds),
-    {ok, Stories}.
+    case fetch_stories_ids() of
+        {ok, TopIds} ->
+            Stories = fetch_whole_stories(TopIds),
+            {ok, Stories};
+        {error, could_not_fetch} ->
+            {ok, []}
+    end.
 
 -spec fetch_stories_ids() -> {ok, [hna_storage:story_id()]} | {error, could_not_fetch}.
 
@@ -18,7 +22,8 @@ fetch_stories_ids() ->
         {ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} when is_binary(Body) ->
             AllIds = json:decode(Body),
             {ok, lists:sublist(AllIds, StoriesCount)};
-        {error, _Error} ->
+        {error, Error} ->
+            logger:error("Could not fetch ids: ~p~n", [Error]),
             {error, could_not_fetch}
     end.
 
@@ -31,13 +36,14 @@ fetch_whole_stories(Ids) ->
             fun(Id, Stories) ->
                 Url = ItemUrl ++ integer_to_list(Id) ++ ".json",
                 case httpc:request(get, {Url, []}, [], [{body_format, binary}]) of
-                    {ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} ->
+                    {ok, {{_Version, 200, _ReasonPhrase}, _Headers, Body}} when is_binary(Body) ->
                         StoryMap = json:decode(Body),
                         StoryMapClean = lists:foldl(fun maps:remove/2, StoryMap, [
                             <<"descendants">>, <<"kids">>, <<"type">>
                         ]),
                         [StoryMapClean | Stories];
-                    _ ->
+                    {error, Error} ->
+                        logger:error("Could not fetch story with id: ~p. Reason: ~p~n", [Id, Error]),
                         Stories
                 end
             end,
