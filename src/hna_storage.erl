@@ -45,8 +45,16 @@ handle_cast(_Request, _State) ->
     erlang:error(not_implemented).
 
 
-handle_info(refresh_stories, _State) ->
-    {ok, Stories} = hna_fetcher:get_stories(),
+handle_info(refresh_stories, State) ->
+    Self = self(),
+    spawn_monitor(
+      fun() ->
+        {ok, Stories} = hna_fetcher:get_stories(),
+        Self ! {fetched_stories, Stories}
+      end
+    ),
+    {noreply, State};
+handle_info({fetched_stories, Stories}, _State) ->
     % Send messages to connected ws clients
     lists:foreach(
       fun(Pid) ->
@@ -54,7 +62,9 @@ handle_info(refresh_stories, _State) ->
       end,
       pg:get_members(ws_connections)),
     erlang:send_after(refresh_interval(), self(), refresh_stories),
-    {noreply, Stories}.
+    {noreply, Stories};
+handle_info(_, State) ->
+    {noreply, State}.
 
 
 refresh_interval() ->
